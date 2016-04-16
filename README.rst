@@ -7,3 +7,6 @@ JSON-RPC over websockets.
 
 .. image:: https://coveralls.io/repos/github/f0t0n/aiojsonrpc/badge.svg?branch=master
     :target: https://coveralls.io/github/f0t0n/aiojsonrpc?branch=master
+
+.. image:: https://badge.fury.io/py/aiojsonrpc.svg
+    :target: https://badge.fury.io/py/aiojsonrpc
