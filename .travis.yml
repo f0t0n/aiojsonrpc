@@ -7,8 +7,7 @@ python:
 # command to install dependencies
 install:
     - pip install coveralls
-    - pip install -q pytest>=2.9.0
-    - pip install -q pytest-runner>=2.7
+    - pip install -q -U pytest>=2.9.0
     - pip install -q .
 # command to run tests
 script: "python setup.py test_ci"
