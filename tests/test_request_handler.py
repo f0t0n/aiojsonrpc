@@ -33,6 +33,22 @@ def error(method):
         }
 
 
+def msg():
+    def _msg(request):
+        return request.param
+    return _msg
+
+
+def assert_send_bytes_called(ws, resp):
+    assert not ws.send_str.called
+    ws.send_bytes.assert_called_with(msgpack.dumps(resp))
+
+
+def assert_send_str_called(ws, resp):
+    assert not ws.send_bytes.called
+    ws.send_str.assert_called_with(json.dumps(resp))
+
+
 def create_request(service):
     return {
         'method': service,
@@ -91,8 +107,6 @@ def valid_msg_params_binary():
 def valid_msg_params_text():
     return [
         create_msg(aiohttp.MsgType.text, text_rpc_call()),
-        # create_msg(aiohttp.MsgType.text, 'close'),
-        # create_msg(aiohttp.MsgType.error, None),
     ]
 
 
@@ -131,12 +145,6 @@ def ws():
     return ws
 
 
-def msg():
-    def _msg(request):
-        return request.param
-    return _msg
-
-
 @pytest.fixture(scope='function')
 def msg_close():
     return create_msg(aiohttp.MsgType.text, 'close')
@@ -158,16 +166,6 @@ invalid_msg_binary = pytest.fixture(scope='function',
 @pytest.fixture(scope='function')
 def services(test_service):
     return {test_service.__name__: test_service()}
-
-
-def assert_send_bytes_called(ws, resp):
-    assert not ws.send_str.called
-    ws.send_bytes.assert_called_with(msgpack.dumps(resp))
-
-
-def assert_send_str_called(ws, resp):
-    assert not ws.send_bytes.called
-    ws.send_str.assert_called_with(json.dumps(resp))
 
 
 @pytest.mark.asyncio
