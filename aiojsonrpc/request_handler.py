@@ -1,4 +1,5 @@
 import aiohttp
+from aiohttp.web import WebSocketResponse
 from .exception import RpcError
 from .exception import RpcErrorCode
 from .serializer import json
@@ -82,7 +83,7 @@ class RpcWebsocketHandler(object):
             pass
 
     async def __call__(self, request):
-        ws = aiohttp.web.WebSocketResponse()
+        ws = WebSocketResponse()
         await ws.prepare(request)
         request.app['websockets'].append(ws)
         try:
