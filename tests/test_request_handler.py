@@ -10,8 +10,15 @@ from aiojsonrpc.util import rpc_method
 from aiojsonrpc.exception import RpcErrorCode
 
 
+# def coro_mock(**kwargs):
+#     return asyncio.coroutine(mock.Mock(**kwargs))
+
 def coro_mock(**kwargs):
-    return asyncio.coroutine(mock.Mock(**kwargs))
+    coro = mock.Mock(**{**kwargs, 'name': 'coroutine_result'})
+    corofn = mock.Mock(name='coroutine_function',
+                       side_effect=asyncio.coroutine(coro))
+    corofn.coro = coro
+    return corofn
 
 
 def result():
@@ -31,6 +38,22 @@ def error(method):
             },
             'id': 1,
         }
+
+
+def msg():
+    def _msg(request):
+        return request.param
+    return _msg
+
+
+def assert_send_bytes_called(ws, resp):
+    assert not ws.send_str.called
+    ws.send_bytes.assert_called_with(msgpack.dumps(resp))
+
+
+def assert_send_str_called(ws, resp):
+    assert not ws.send_bytes.called
+    ws.send_str.assert_called_with(json.dumps(resp))
 
 
 def create_request(service):
@@ -91,8 +114,6 @@ def valid_msg_params_binary():
 def valid_msg_params_text():
     return [
         create_msg(aiohttp.MsgType.text, text_rpc_call()),
-        # create_msg(aiohttp.MsgType.text, 'close'),
-        # create_msg(aiohttp.MsgType.error, None),
     ]
 
 
@@ -125,16 +146,15 @@ def msg_handler():
 
 
 @pytest.fixture(scope='function')
+def rpc_websocket_handler():
+    return request_handler.create_default_rpc_websocket_handler()
+
+
+@pytest.fixture(scope='function')
 def ws():
-    ws = mock.MagicMock(autospec=True)
+    ws = mock.MagicMock()
     ws.close = coro_mock(side_effect=Exception('websocket closed'))
     return ws
-
-
-def msg():
-    def _msg(request):
-        return request.param
-    return _msg
 
 
 @pytest.fixture(scope='function')
@@ -158,16 +178,6 @@ invalid_msg_binary = pytest.fixture(scope='function',
 @pytest.fixture(scope='function')
 def services(test_service):
     return {test_service.__name__: test_service()}
-
-
-def assert_send_bytes_called(ws, resp):
-    assert not ws.send_str.called
-    ws.send_bytes.assert_called_with(msgpack.dumps(resp))
-
-
-def assert_send_str_called(ws, resp):
-    assert not ws.send_bytes.called
-    ws.send_str.assert_called_with(json.dumps(resp))
 
 
 @pytest.mark.asyncio
@@ -217,3 +227,22 @@ def test_create_default_rpc_websocket_handler(test_service):
     req_handler = request_handler.create_default_rpc_websocket_handler(
         services=[test_service])
     assert isinstance(req_handler, request_handler.RpcWebsocketHandler)
+
+
+@pytest.mark.asyncio
+@mock.patch('aiojsonrpc.request_handler.WebSocketMessageHandler')
+async def test_rpc_websocket_handler(MockWebSocketMessageHandler):
+    ws_response = 'aiojsonrpc.request_handler.WebSocketResponse'
+    with mock.patch(ws_response) as MockWebSocketResponse:
+        ws_msg_mock = mock.Mock()
+        ws_msg_mock.tp = aiohttp.MsgType.close
+        ws_instance = MockWebSocketResponse.return_value
+        ws_instance.prepare = coro_mock()
+        ws_instance.receive = coro_mock(return_value=ws_msg_mock)
+
+        msg_handler = MockWebSocketMessageHandler.return_value
+        msg_handler.handle_message = coro_mock()
+        req = mock.MagicMock()
+
+        await request_handler.RpcWebsocketHandler(msg_handler)(req)
+        assert msg_handler.handle_message.called
