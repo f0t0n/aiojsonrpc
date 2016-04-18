@@ -224,29 +224,17 @@ def test_create_default_rpc_websocket_handler(test_service):
 
 @pytest.mark.asyncio
 @mock.patch('aiojsonrpc.request_handler.WebSocketMessageHandler')
-async def test_rpc_websocket_handler(
-    MockWebSocketMessageHandler,
-    rpc_websocket_handler
-):
-
+async def test_rpc_websocket_handler(MockWebSocketMessageHandler):
     ws_response = 'aiojsonrpc.request_handler.WebSocketResponse'
     with mock.patch(ws_response) as MockWebSocketResponse:
-        # MockRequest = mock.create_autospec(aiohttp.web_reqrep.Request)
-        # req = MockRequest(*[None] * 6)
-        MockRequest = mock.MagicMock()
-        req = MockRequest()
-
+        ws_msg_mock = mock.Mock()
+        ws_msg_mock.tp = aiohttp.MsgType.close
         ws_instance = MockWebSocketResponse.return_value
-        ret = mock.Mock()
         ws_instance.prepare = coro_mock()
-        ws_instance.__aiter__ = coro_mock(return_value=iter(range(5)))
-        ws_instance.__anext__ = coro_mock()
+        ws_instance.receive = coro_mock(return_value=ws_msg_mock)
 
-        handle_msg_result = 'Message processed'
-        MockWebSocketMessageHandler.handle_message.side_effect = Exception(
-            handle_msg_result)
         msg_handler = MockWebSocketMessageHandler()
+        req = mock.MagicMock()
 
-        with pytest.raises(Exception) as e:
-            await request_handler.RpcWebsocketHandler(msg_handler)(req)
-        assert str(e.value) == handle_msg_result
+        await request_handler.RpcWebsocketHandler(msg_handler)(req)
+        assert msg_handler.handle_message.called
