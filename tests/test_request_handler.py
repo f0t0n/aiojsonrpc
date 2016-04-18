@@ -10,8 +10,15 @@ from aiojsonrpc.util import rpc_method
 from aiojsonrpc.exception import RpcErrorCode
 
 
+# def coro_mock(**kwargs):
+#     return asyncio.coroutine(mock.Mock(**kwargs))
+
 def coro_mock(**kwargs):
-    return asyncio.coroutine(mock.Mock(**kwargs))
+    coro = mock.Mock(**{**kwargs, 'name': 'coroutine_result'})
+    corofn = mock.Mock(name='coroutine_function',
+                       side_effect=asyncio.coroutine(coro))
+    corofn.coro = coro
+    return corofn
 
 
 def result():
@@ -233,7 +240,8 @@ async def test_rpc_websocket_handler(MockWebSocketMessageHandler):
         ws_instance.prepare = coro_mock()
         ws_instance.receive = coro_mock(return_value=ws_msg_mock)
 
-        msg_handler = MockWebSocketMessageHandler()
+        msg_handler = MockWebSocketMessageHandler.return_value
+        msg_handler.handle_message = coro_mock()
         req = mock.MagicMock()
 
         await request_handler.RpcWebsocketHandler(msg_handler)(req)
