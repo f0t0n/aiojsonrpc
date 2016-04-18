@@ -1,5 +1,4 @@
 import aiohttp
-import asyncio
 import pytest
 from unittest import mock
 from aiojsonrpc import request_handler
@@ -8,17 +7,7 @@ from aiojsonrpc.serializer import json
 from aiojsonrpc.service import Service
 from aiojsonrpc.util import rpc_method
 from aiojsonrpc.exception import RpcErrorCode
-
-
-# def coro_mock(**kwargs):
-#     return asyncio.coroutine(mock.Mock(**kwargs))
-
-def coro_mock(**kwargs):
-    coro = mock.Mock(**{**kwargs, 'name': 'coroutine_result'})
-    corofn = mock.Mock(name='coroutine_function',
-                       side_effect=asyncio.coroutine(coro))
-    corofn.coro = coro
-    return corofn
+from tests.util import coro_mock
 
 
 def result():
