@@ -1,6 +1,4 @@
 from unittest import mock
-import pytest
-import sys
 from aiojsonrpc.serializer.json import import_json
 
 
