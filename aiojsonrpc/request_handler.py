@@ -110,11 +110,8 @@ class RpcWebsocketHandler(object):
     async def _handle_ws(self, ws, request):
         context = self._create_context(request)
         _services = self._get_services(**context)
-        while True:
-            msg = await ws.receive()
+        async for msg in ws:
             await self._ws_msg_handler.handle_message(ws, msg, _services)
-            if msg.tp == aiohttp.MsgType.close:
-                break
         return ws
 
 
