@@ -1,5 +1,4 @@
 import aiohttp
-import asyncio
 import pytest
 from unittest import mock
 from aiojsonrpc import request_handler
@@ -8,17 +7,7 @@ from aiojsonrpc.serializer import json
 from aiojsonrpc.service import Service
 from aiojsonrpc.util import rpc_method
 from aiojsonrpc.exception import RpcErrorCode
-
-
-# def coro_mock(**kwargs):
-#     return asyncio.coroutine(mock.Mock(**kwargs))
-
-def coro_mock(**kwargs):
-    coro = mock.Mock(**{**kwargs, 'name': 'coroutine_result'})
-    corofn = mock.Mock(name='coroutine_function',
-                       side_effect=asyncio.coroutine(coro))
-    corofn.coro = coro
-    return corofn
+from tests.util import coro_mock
 
 
 def result():
@@ -129,6 +118,23 @@ def invalid_msg_params_binary():
 
 
 @pytest.fixture(scope='function')
+def async_iterator():
+    class AsyncIterator(object):
+        def __init__(self, seq):
+            self.iter = iter(seq)
+
+        async def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            try:
+                return next(self.iter)
+            except StopIteration:
+                raise StopAsyncIteration
+    return AsyncIterator
+
+
+@pytest.fixture(scope='function')
 def test_service():
     class TestService(Service):
         @rpc_method
@@ -231,9 +237,12 @@ def test_create_default_rpc_websocket_handler(test_service):
 
 @pytest.mark.asyncio
 @mock.patch('aiojsonrpc.request_handler.WebSocketMessageHandler')
-async def test_rpc_websocket_handler(MockWebSocketMessageHandler):
+async def test_rpc_websocket_handler(MockWebSocketMessageHandler,
+                                     async_iterator):
     ws_response = 'aiojsonrpc.request_handler.WebSocketResponse'
     with mock.patch(ws_response) as MockWebSocketResponse:
+        MockWebSocketResponse.return_value = async_iterator(range(5))
+
         ws_msg_mock = mock.Mock()
         ws_msg_mock.tp = aiohttp.MsgType.close
         ws_instance = MockWebSocketResponse.return_value

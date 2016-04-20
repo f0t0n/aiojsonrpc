@@ -28,8 +28,12 @@ async def call_aiojsonrpc_services():
         await call(client, 'PrinterService.print', text='Letter')
         await call(client, 'CameraService.take_photo')
         await call(client, 'CameraService.take_photo')
-        await call(client, 'CameraService.take_photo')
         await call(client, 'PrinterService.get_firmware_version')
+
+    async with Client(SERVICE_URL, data_type=str,
+                      session_params=session_params) as client:
+        await call(client, 'PrinterService.print', text='Title page')
+        await call(client, 'CameraService.take_photo')
         await call(client, 'CameraService.non_existent_method')
 
 

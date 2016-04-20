@@ -1,10 +1,6 @@
+import ujson as json
 from functools import partial
 from . import factory
-
-try:
-    import ujson as json
-except ImportError:
-    import json
 
 
 loads = partial(factory.loads, json)
