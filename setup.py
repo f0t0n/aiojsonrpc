@@ -16,7 +16,7 @@ def read(f):
 
 name = 'aiojsonrpc'
 
-subpackages = ['{}.{subpkg}'.format(subpkg)
+subpackages = ['{}.{}'.format(name, subpkg)
                for subpkg in ['serializer', ]]
 
 packages = [name, ] + subpackages
