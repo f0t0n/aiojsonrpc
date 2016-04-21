@@ -16,6 +16,10 @@ def read(f):
 
 name = 'aiojsonrpc'
 
+subpackages = ['{}.{subpkg}'.format(subpkg)
+               for subpkg in ['serializer', ]]
+
+packages = [name, ] + subpackages
 
 install_requires = [
     'aiohttp>=0.21.5',
@@ -71,7 +75,7 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
     ],
     license='Apache 2',
-    packages=[name, ],
+    packages=packages,
     install_requires=install_requires,
     setup_requires=setup_requires,
     tests_require=tests_require,
