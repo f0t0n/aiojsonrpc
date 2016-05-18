@@ -83,13 +83,14 @@ class RpcWebsocketHandler(object):
             pass
 
     async def __call__(self, request):
+        self._request = request
         ws = WebSocketResponse()
         await ws.prepare(request)
-        request.app['websockets'].append(ws)
+        await self._save_websocket(ws)
         try:
-            await self._handle_ws(ws, request)
+            await self._handle_ws(ws)
         finally:
-            request.app['websockets'].remove(ws)
+            await self._remove_websocket(ws)
         print('websocket connection closed')
         return ws
 
@@ -101,14 +102,20 @@ class RpcWebsocketHandler(object):
         self._services[service.__name__] = service
         return self._services
 
+    async def _save_websocket(self, ws):
+        self._request.app['websockets'].append(ws)
+
+    async def _remove_websocket(self, ws):
+        self._request.app['websockets'].remove(ws)
+
     def _create_context(self, request, **context) -> dict:
         return {**request.get('_context', {}), **context}
 
     def _get_services(self, **context):
         return {name: cls(**context) for name, cls in self._services.items()}
 
-    async def _handle_ws(self, ws, request):
-        context = self._create_context(request)
+    async def _handle_ws(self, ws):
+        context = self._create_context(self._request)
         _services = self._get_services(**context)
         async for msg in ws:
             await self._ws_msg_handler.handle_message(ws, msg, _services)
